@@ -102,6 +102,7 @@ var Admin = {
         currentID: null,
         tabsCookies: null
     },
+	el: { mainTabs: '#main-tabs .nav-tabs li' },
     uty: {
         ajx: function (o, callback) {
             $.ajax({
@@ -130,6 +131,7 @@ var Admin = {
 			}else if( typ == 'get' )
 				return $.cookie( name );
 		},
+		detectEl: function( ID ){ return $(ID).length > 0 ? true : false; },
 		getTabID: function( ID ){
 			var _t = Admin;
 			ID = $( ID );
@@ -138,11 +140,11 @@ var Admin = {
 			return '#' + id;
 		},
 		getTabObj: function(){
-			var obj = {};
-			$('#main-tabs .nav-tabs li')
+			var _t = Admin, obj = {};
+			$( _t.el['mainTabs'] )
 			.each(function( i ){
 				var ths = $( this ), ID = ths.find('a'), k = ths.attr('aria-controls') || '';
-				obj[ k ] = { 'open': i, 'url': ID.attr('data-url') || '', 'ID': k, 'title': ID.attr('title') || '' };
+				obj[ k ] = { 'open': i, 'url': ID.attr('data-url') || '', 'ID': k, 'title': ID.attr('title') || '', 'rel': ID.attr('rel') || '' };
 			});
 			return obj;
 		}
@@ -238,12 +240,12 @@ var Admin = {
             var _tbs = this,
                 _place = place || null,
                 tabs = Admin.definitions.mainTabs,
-                tabTemplate = '<li id="tab-#{id}" role="presentation"><a data-url="#{url}" title="#{title}" href="#{id}">#{title}'+ (fixed ? '' : '<span class="glyphicon glyphicon-remove"></span>') + '</a></li>',
+                tabTemplate = '<li id="tab-#{id}" role="presentation"><a data-rel="#{rel}" data-url="#{url}" title="#{title}" href="#{id}">#{title}'+ (fixed ? '' : '<span class="glyphicon glyphicon-remove"></span>') + '</a></li>',
                 ID = obj.ID;
             
             if (this.openTabs[ID] == null)
             {
-                var li = $( tabTemplate.replace( /#\{id\}/g, "#"+ID).replace( /#\{title\}/g, obj.title ).replace( /#\{url\}/g, obj.url));
+                var li = $( tabTemplate.replace( /#\{id\}/g, "#"+ID).replace( /#\{title\}/g, obj.title ).replace( /#\{url\}/g, obj.url).replace( /#\{rel\}/g, ( obj.rel || '' ) ));
                 $("#main-tabs > ul > li.active").removeClass("active");
                 
                 console.log("nananna", Admin.definitions.currentID );
@@ -303,23 +305,28 @@ var Admin = {
                 
                 
         },
-        close: function(obj){
-            var ID = $( obj ).closest( "li" ).remove().attr( "aria-controls" ), t = this;
-            $( "#" + ID ).remove();
-            
+        close: function(obj){ 
+            var _t = Admin, ths = $( obj ).closest( "li" ), rel = $( obj ).parent('a').attr('data-rel') || '', ID = ths.remove().attr( "aria-controls" ), t = this;
+				
+			$( "#" + ID ).remove();
+			
             delete this.openTabs[ID];
             
             // select another tab on close
             if( Object.keys(t.openTabs).length == 0 )
                 this.open({url:"/tr/admin", title:"home", ID:"home"}, true);
-            else
-                for ( i in t.openTabs)
+            else{
+				var e = 	$( _t.el['mainTabs'] + ' a[href="'+ rel +'"]' );
+				if( _t.uty.detectEl( e ) )
+					e.click();
+				else	
+				for ( i in t.openTabs)
                     if( t.openTabs[i] != null ) {
                         $('a[href="#'+i+'"]').click();
                         Admin.registerToHistory(i, t.openTabs[i].url);
                         break;
                     }
-            
+			}
             this.refreshCookies();
         },
         load: function( url, ID, register )
@@ -408,7 +415,7 @@ var Admin = {
                 if( $(this).attr("target") != "blank" && $(this).attr("href").indexOf("#") < 0 )
                     $(this).unbind("click").click(function( event ){
                         event.preventDefault();
-                        t.tabs.open({url:$(this).attr("href"), title:$(this).attr("title"), ID:$(this).attr("data-id")});
+                        t.tabs.open({url:$(this).attr("href"), title:$(this).attr("title"), ID:$(this).attr("data-id"), rel: Admin.uty.getTabID( $(this) ) });
                     });
             });
         },
