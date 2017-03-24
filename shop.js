@@ -9,7 +9,6 @@ var Admin = {
         currentID: null,
         tabsCookies: null
     },
-
     uty: {
         ajx: function (o, callback) {
             $.ajax({
@@ -28,7 +27,14 @@ var Admin = {
                         callback({ type: 'success', val: d });
                 }
             });
-        }
+        },
+		getTabID: function( ID ){
+			var _t = Admin;
+			ID = $( ID );
+			if( ID.hasClass('ui-tabs-panel') ) id = ID.attr('id') || '';
+			else id = ID.parents('.ui-tabs-panel').eq( 0 ).attr('id') || '';
+			return '#' + id;
+		}
     },
     init: function(){
         var t = this,
@@ -329,10 +335,14 @@ var Admin = {
         },
         // activate data table grid
         table: function( ID ){
-            var _ID = ID || ""; console.log(_ID)
+            var _ID = ID || ""; 
             $(_ID+" .data-table").each(function(){
                 eval("var config = " + $('noscript', this).html());
-                
+				
+				config['drawCallback'] = function( d ){ 
+					Admin.actions.links( Admin.uty.getTabID( d.nTableWrapper ) ); 
+				};
+				
                 table = $('table', this).DataTable( config );
                 
                 if( $('noscript', this).attr("dir") != undefined)
@@ -559,5 +569,3 @@ function makeArrayAndSortBy( object, sort ) {
 }
 
 window.addEventListener('popstate', function (event) { console.log(event); });
-
-
